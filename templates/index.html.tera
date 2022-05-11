@@ -12,7 +12,7 @@
   </form>
   <ul class="todo-list" id="todo-list">
     {% for todo in todos %}
-      {% include "todos/item" %}
+      {% include "item.html.tera" %}
     {% endfor %}
   </ul>
 </section>
