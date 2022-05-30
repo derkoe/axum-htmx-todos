@@ -2,7 +2,9 @@ use axum::response::Redirect;
 use axum::routing::get_service;
 use axum::Extension;
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
-use std::net::SocketAddr;
+use migration::{Migrator, MigratorTrait};
+use sea_orm::{prelude::*, Database};
+use std::{env, net::SocketAddr};
 use tera::Tera;
 use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
@@ -10,6 +12,9 @@ mod todos;
 
 #[tokio::main]
 async fn main() {
+    let db_conn = db_conn().await.expect("Bla");
+    Migrator::up(&db_conn, None).await.unwrap();
+
     let templates = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*"))
         .expect("Tera initialization failed");
     let app = Router::new()
@@ -28,7 +33,11 @@ async fn main() {
                 )
             }),
         )
-        .layer(ServiceBuilder::new().layer(Extension(templates)));
+        .layer(
+            ServiceBuilder::new()
+                .layer(Extension(templates))
+                .layer(Extension(db_conn)),
+        );
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
@@ -39,4 +48,10 @@ async fn main() {
 
 async fn root() -> impl IntoResponse {
     Redirect::to("/todos")
+}
+
+async fn db_conn() -> Result<DatabaseConnection, DbErr> {
+    dotenv::dotenv().ok();
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
+    Database::connect(db_url).await
 }
