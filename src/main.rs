@@ -1,5 +1,5 @@
 use axum::response::Redirect;
-use axum::routing::get_service;
+use axum::routing::{get_service, post};
 use axum::Extension;
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
 use migration::{Migrator, MigratorTrait};
@@ -20,6 +20,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/todos", get(todos::web::index))
+        .route("/todos", post(todos::web::create))
         .nest(
             "/static",
             get_service(ServeDir::new(concat!(
