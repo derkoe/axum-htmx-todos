@@ -38,13 +38,13 @@ pub async fn create(
     Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>,
     Form(todo): Form<NewTodo>,
 ) -> Result<Html<String>, (StatusCode, &'static str)> {
-    // let model = form.0;
-    let model = NewTodo { title: todo.title };
-
     use schema::todos::dsl::*;
-    insert_into(todos)
-        .values(&model)
-        .execute(&mut pool.get().unwrap());
 
-    return index(template_extension, dbpool_extension).await;
+    match insert_into(todos)
+        .values(&todo)
+        .execute(&mut pool.get().unwrap())
+    {
+        Err(_) => Result::Err((StatusCode::INTERNAL_SERVER_ERROR, "")),
+        Ok(_) => index(template_extension, dbpool_extension).await,
+    }
 }
