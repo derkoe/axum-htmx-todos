@@ -1,20 +1,17 @@
 [package]
 edition = "2021"
-name = "axum-htmx-todos"
+name = "axum_htmx_todos"
 version = "0.1.0"
-
-[workspace]
-members = [".", "entity", "migration"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 axum = {version = "0.5"}
+axum-macros = {version = "0.2"}
 chrono = {version = "0.4", features = ["serde"]}
-dotenv = "0.15"
+dotenvy = "0.15"
 entity = {path = "entity"}
-migration = {path = "migration"}
-sea-orm = {version = "0.8", features = ["runtime-tokio-native-tls", "sqlx-postgres", "macros"], default-features = false}
+diesel = { version = "2.0.0", features = ["postgres", "r2d2", "uuid", "chrono"] }
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 tera = "1.15"
