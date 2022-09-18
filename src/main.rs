@@ -21,6 +21,7 @@ async fn main() {
         .route("/", get(root))
         .route("/todos", get(web::index))
         .route("/todos", post(web::create))
+        .route("/todos/:id/delete", post(web::delete))
         .nest(
             "/static",
             get_service(ServeDir::new(concat!(
