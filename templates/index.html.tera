@@ -1,4 +1,5 @@
-{% extends "base.html.tera" %} {% block content %}
+{% extends "base.html.tera" %}
+{% block content %}
 <header class="header">
   <h1>todos</h1>
   <form action="/todos" method="POST" hx-target="#todo-list" hx-swap="beforeend">
@@ -6,13 +7,14 @@
   </form>
 </header>
 <section class="main">
-  <form action="/todos/toggle-all" method="POST" hx-post="/todos/toggle-all" hx-select="#todo-list" hx-target="#todo-list" hx-swap="outerHTML">
+  <form action="/todos/toggle-all" method="POST" hx-post="/todos/toggle-all" hx-select="#todo-list"
+    hx-target="#todo-list" hx-swap="outerHTML">
     <button type="submit" id="toggle-all" class="toggle-all"></button>
     <label for="toggle-all">Mark all as complete</label>
   </form>
   <ul class="todo-list" id="todo-list">
     {% for todo in todos %}
-      {% include "item.html.tera" %}
+    {% include "item.html.tera" %}
     {% endfor %}
   </ul>
 </section>

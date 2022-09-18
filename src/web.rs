@@ -1,10 +1,12 @@
 use self::models::*;
 use axum::Form;
 use axum::{http::StatusCode, response::Html, Extension};
+use axum_htmx_todos::hxrequest::HxRequest;
 use axum_htmx_todos::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use diesel::{insert_into, prelude::*};
+use serde::Deserialize;
 use tera::Tera;
 
 pub async fn index(
@@ -32,19 +34,30 @@ pub async fn index(
     Ok(Html(body))
 }
 
+#[derive(Deserialize)]
+pub struct TodoFormData {
+    title: String,
+}
+
 pub async fn create(
+    Form(form_data): Form<TodoFormData>,
+    HxRequest(hx_request): HxRequest,
     template_extension: Extension<Tera>,
     dbpool_extension: Extension<Pool<ConnectionManager<PgConnection>>>,
     Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>,
-    Form(todo): Form<NewTodo>,
 ) -> Result<Html<String>, (StatusCode, &'static str)> {
     use schema::todos::dsl::*;
+    let todo = NewTodo {
+        id: uuid::Uuid::new_v4(),
+        title: form_data.title,
+    };
 
-    match insert_into(todos)
-        .values(&todo)
-        .execute(&mut pool.get().unwrap())
-    {
-        Err(_) => Result::Err((StatusCode::INTERNAL_SERVER_ERROR, "")),
-        Ok(_) => index(template_extension, dbpool_extension).await,
-    }
+    let conn = &mut pool.get().unwrap();
+
+    conn.transaction(|c| insert_into(todos).values(&todo).execute(c))
+        .expect("DB Error"); // TODO better error handling
+
+    println!("{}", hx_request);
+
+    index(template_extension, dbpool_extension).await
 }
