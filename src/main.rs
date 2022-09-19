@@ -21,6 +21,9 @@ async fn main() {
         .route("/", get(root))
         .route("/todos", get(web::index))
         .route("/todos", post(web::create))
+        .route("/todos/:id", post(web::update))
+        .route("/todos/:id/toggle", post(web::toggle))
+        .route("/todos/toggle-all", post(web::toggle_all))
         .route("/todos/:id/delete", post(web::delete))
         .nest(
             "/static",

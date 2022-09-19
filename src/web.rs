@@ -7,6 +7,7 @@ use axum::{http::StatusCode, Extension};
 use axum_htmx_todos::hxrequest::HxRequest;
 use axum_htmx_todos::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::sql_types::Text;
 use diesel::PgConnection;
 use diesel::{insert_into, prelude::*};
 use serde::Deserialize;
@@ -101,4 +102,43 @@ pub async fn delete(
         .expect("DB Error");
 
     Redirect::to("/todos")
+}
+
+pub async fn update(
+    Path(id): Path<Uuid>,
+    Form(form_data): Form<TodoFormData>,
+    Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>,
+) -> Redirect {
+    use schema::todos::dsl::id as id_col;
+    use schema::todos::dsl::title as title_col;
+    use schema::todos::dsl::todos;
+    diesel::update(todos)
+        .filter(id_col.eq(id))
+        .set(title_col.eq(form_data.title))
+        .execute(&mut pool.get().unwrap())
+        .expect("DB Error");
+
+    Redirect::to("/todos")
+}
+
+pub async fn toggle(
+    Path(id): Path<Uuid>,
+    Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>,
+) {
+    diesel::sql_query("UPDATE todos SET completed = NOT completed WHERE id = uuid($1)")
+        .bind::<Text, _>(id.to_string())
+        .execute(&mut pool.get().unwrap())
+        .expect("DB Error");
+
+    // diesel::update(todos)
+    //     .filter(id_col.eq(id))
+    //     .set(completed_col.ne(completed_col))
+    //     .execute(&mut pool.get().unwrap())
+    //     .expect("DB Error");
+}
+
+pub async fn toggle_all(Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>) {
+    diesel::sql_query("UPDATE todos SET completed =  NOT completed")
+        .execute(&mut pool.get().unwrap())
+        .expect("DB Error");
 }
