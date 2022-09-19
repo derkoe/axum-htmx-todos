@@ -7,7 +7,6 @@ use axum::{http::StatusCode, Extension};
 use axum_htmx_todos::hxrequest::HxRequest;
 use axum_htmx_todos::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::sql_types::Text;
 use diesel::PgConnection;
 use diesel::{insert_into, prelude::*};
 use serde::Deserialize;
@@ -22,10 +21,13 @@ pub async fn index(
 
     use self::schema::todos::dsl::*;
     let conn = &mut pool.get().unwrap();
-    let todo_list = todos.load::<Todo>(conn).expect("msg");
+    let todo_list = todos
+        .order_by(created_timestamp)
+        .load::<Todo>(conn)
+        .expect("DB Error");
     let items_left = match todos.filter(completed.eq(false)).count().get_result(conn) {
         Ok(count) => count,
-        Err(_) => 0, // TODO better error handling wiht `?`
+        Err(_) => 0, // TODO better error handling with `?`
     };
 
     let mut ctx = tera::Context::new();
@@ -125,20 +127,23 @@ pub async fn toggle(
     Path(id): Path<Uuid>,
     Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>,
 ) {
-    diesel::sql_query("UPDATE todos SET completed = NOT completed WHERE id = uuid($1)")
-        .bind::<Text, _>(id.to_string())
+    use schema::todos::dsl::completed as completed_col;
+    use schema::todos::dsl::id as id_col;
+    use schema::todos::dsl::todos;
+
+    diesel::update(todos)
+        .filter(id_col.eq(id))
+        .set(completed_col.eq(diesel::dsl::not(completed_col)))
         .execute(&mut pool.get().unwrap())
         .expect("DB Error");
-
-    // diesel::update(todos)
-    //     .filter(id_col.eq(id))
-    //     .set(completed_col.ne(completed_col))
-    //     .execute(&mut pool.get().unwrap())
-    //     .expect("DB Error");
 }
 
 pub async fn toggle_all(Extension(ref pool): Extension<Pool<ConnectionManager<PgConnection>>>) {
-    diesel::sql_query("UPDATE todos SET completed =  NOT completed")
+    use schema::todos::dsl::completed as completed_col;
+    use schema::todos::dsl::todos;
+
+    diesel::update(todos)
+        .set(completed_col.eq(diesel::dsl::not(completed_col)))
         .execute(&mut pool.get().unwrap())
         .expect("DB Error");
 }
