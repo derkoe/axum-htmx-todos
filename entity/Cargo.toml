@@ -12,4 +12,4 @@ path = "src/lib.rs"
 serde = { version = "1", features = ["derive"] }
 
 [dependencies.sea-orm]
-version = "^0.8.0"
+version = "^0.10.3"
